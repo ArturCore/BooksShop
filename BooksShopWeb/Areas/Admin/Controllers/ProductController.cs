@@ -1,6 +1,7 @@
 ﻿using BooksShop.DataAccess.Data;
 using BooksShop.DataAccess.Repository.IRepository;
 using BooksShop.Models;
+using BooksShop.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -23,29 +24,36 @@ namespace BooksShopWeb.Areas.Admin.Controllers
 
         public IActionResult Create()
         {
-            IEnumerable<SelectListItem> categoryList = _unitOfWork.Category
-                .GetAll().Select(c => new SelectListItem
+            ProductVM productVM = new() 
+            {
+                CategoryList = _unitOfWork.Category.GetAll().Select(c => new SelectListItem
+                {
+                    Text = c.Name,
+                    Value = c.Id.ToString()
+                }),
+                Product = new Product()
+            };
+            return View(productVM);
+        }
+
+        [HttpPost]
+        public IActionResult Create(ProductVM productVM)
+        {
+            if(ModelState.IsValid)
+            {
+                _unitOfWork.Product.Add(productVM.Product);
+                _unitOfWork.Save();
+                TempData["success"] = "Product created successfully";
+                return RedirectToAction("Index");
+            } else
+            {
+                productVM.CategoryList = _unitOfWork.Category.GetAll().Select(c => new SelectListItem
                 {
                     Text = c.Name,
                     Value = c.Id.ToString()
                 });
-
-            //ViewBag.CategoryList = categoryList;
-            ViewData["CategoryList"] = categoryList;
-            return View();
-        }
-
-        [HttpPost]
-        public IActionResult Create(Product product)
-        {
-            if(ModelState.IsValid)
-            {
-                _unitOfWork.Product.Add(product);
-                _unitOfWork.Save();
-                TempData["success"] = "Product created successfully";
-                return RedirectToAction("Index");
+                return View(productVM);
             }
-            return View();
         }
 
         public IActionResult Edit(int? id)
